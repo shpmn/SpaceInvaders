@@ -1,2 +1,2 @@
 # SpaceInvaders
-# Projektowanie gier komputerowych
+Projekt na projektowanie gier komputerowych
