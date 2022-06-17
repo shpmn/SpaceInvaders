@@ -11,7 +11,7 @@ screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 # caption and icon
-pygame.display.set_caption("Welcome to Space Invaders Game by:- styles")
+pygame.display.set_caption("Space Invaders")
 
 # Score
 score_val = 0
@@ -21,6 +21,15 @@ font = pygame.font.Font('freesansbold.ttf', 20)
 
 # Game Over
 game_over_font = pygame.font.Font('freesansbold.ttf', 64)
+
+
+class Invader:
+    def __init__(self):
+        self.invader_X = random.randint(64, 737)
+        self.invader_Y = random.randint(450, 550)
+        self.invader_Xchange = 0.2
+        self.invader_Ychange = 30
+
 
 
 def show_score(x, y):
@@ -33,15 +42,11 @@ def game_over():
     screen.blit(game_over_text, (190, 250))
 
 
-# Background Sound
-# mixer.music.load('data/background.wav')
-# mixer.music.play(-1)
-#
-# player
 playerImage = pygame.image.load('data/spaceship.png')
 player_X = 370
 player_Y = 523
 player_Xchange = 0
+default_player_Xchange = 0.4
 
 # Invader
 invaderImage = []
@@ -49,22 +54,25 @@ invader_X = []
 invader_Y = []
 invader_Xchange = []
 invader_Ychange = []
-no_of_invaders = 8
+no_of_invaders = 6
+alien_images = ['data/alien_blue.png', 'data/alien_gray.png', 'data/alien_green.png',
+                'data/alien_white.png', 'data/alien_yellow.png', 'data/alien_red.png']
+
 for num in range(no_of_invaders):
-    invaderImage.append(pygame.image.load('data/alien.png'))
+    # invaderImage.append(pygame.image.load(random.choice(alien_images)))
     invader_X.append(random.randint(64, 737))
-    invader_Y.append(random.randint(30, 180))
-    invader_Xchange.append(1.2)
-    invader_Ychange.append(50)
+    invader_Y.append(random.randint(450, 550))
+    invader_Xchange.append(0.2)
+    invader_Ychange.append(30)
 
 # Bullet
 # rest - bullet is not moving
 # fire - bullet is moving
 bulletImage = pygame.image.load('data/bullet.png')
 bullet_X = 0
-bullet_Y = 500
+bullet_Y = 100
 bullet_Xchange = 0
-bullet_Ychange = 3
+bullet_Ychange = 2
 bullet_state = "rest"
 
 
@@ -81,8 +89,9 @@ def player(x, y):
     screen.blit(playerImage, (x - 16, y + 10))
 
 
-def invader(x, y, i):
-    screen.blit(invaderImage[i], (x, y))
+def invader(x, y):
+    invader_image = pygame.image.load(random.choice(alien_images))
+    screen.blit(invader_image, (x, y))
 
 
 def bullet(x, y):
@@ -96,8 +105,7 @@ def bullet(x, y):
 running = True
 while running:
 
-    # RGB
-    screen.fill((255, 255, 255))
+    screen.fill((0, 0, 0))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -105,13 +113,12 @@ while running:
         # Controling the player movement from the arrow keys
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                player_Xchange = -1.7
+                player_Xchange = -default_player_Xchange
             if event.key == pygame.K_RIGHT:
-                player_Xchange = 1.7
+                player_Xchange = default_player_Xchange
             if event.key == pygame.K_SPACE:
-                # Fixing the change of direction of bullet
                 if bullet_state is "rest":
-                    bullet_X = player_X
+                    bullet_X = player_X + random.randint(-30, 10)
                     bullet(bullet_X, bullet_Y)
         if event.type == pygame.KEYUP:
             player_Xchange = 0
@@ -131,17 +138,17 @@ while running:
 
     # movement of the invader
     for i in range(no_of_invaders):
-
         if invader_Y[i] >= 450:
             if abs(player_X - invader_X[i]) < 80:
                 for j in range(no_of_invaders):
-                    invader_Y[j] = 2000
+                    invader_Y[j] = 200
                 game_over()
                 break
 
         if invader_X[i] >= 735 or invader_X[i] <= 0:
             invader_Xchange[i] *= -1
             invader_Y[i] += invader_Ychange[i]
+
         # Collision
         collision = isCollision(bullet_X, invader_X[i], bullet_Y, invader_Y[i])
         if collision:
@@ -152,13 +159,15 @@ while running:
             invader_Y[i] = random.randint(30, 200)
             invader_Xchange[i] *= -1
 
-        invader(invader_X[i], invader_Y[i], i)
+        invader(invader_X[i], invader_Y[i])
 
     # restricting the spaceship so that it doesn't go out of screen
-    if player_X <= 16:
-        player_X = 16;
-    elif player_X >= 750:
-        player_X = 750
+    left_screen_border = 16
+    right_screen_border = 750
+    if player_X <= left_screen_border:
+        player_X = left_screen_border
+    elif player_X >= right_screen_border:
+        player_X = right_screen_border
 
     player(player_X, player_Y)
     show_score(scoreX, scoreY)
