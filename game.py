@@ -4,7 +4,6 @@
 
 # TODO: SCORE POD GAMEOVER
 # TODO: dodac predkosc przeciwnikow sie zwieksza wraz z punktami
-# TODO: prędkosc X
 # TODO: menu główne
 
 import pygame
