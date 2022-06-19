@@ -3,174 +3,212 @@
 # Date: 18.06.2022
 
 # TODO: przeciwnicy znikają jak dotkną sciany
-# TODO: pociski nie lecą xd
-
+# TODO: dodac predkosc przeciwnikow sie zwieksza wraz z punktami
+# TODO  prędkosc X
 
 import pygame
 import random
 import math
+import time
 
 pygame.init()
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
 screen_width, screen_height = 800, 600
 SCREEN = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Space Invaders")
+pygame.display.set_caption("Space Fighters")
+LEFT_SCREEN_BORDER = 0
+RIGHT_SCREEN_BORDER = 735
 
 
 class InitialSetup:
-    pass
+    background_image = pygame.image.load("data/background.png").convert_alpha()
+
+    @staticmethod
+    def show_background():
+        SCREEN.blit(InitialSetup.background_image, (0, 0))
 
 
 class Enemy:
-    alien_images = ['data/alien_blue.png', 'data/alien_gray.png', 'data/alien_green.png',
-                    'data/alien_white.png', 'data/alien_yellow.png', 'data/alien_red.png']
+    alien_images = ['data/alien_1.png', 'data/alien_2.png', 'data/alien_3.png',
+                    'data/alien_4.png', 'data/alien_5.png', 'data/alien_6.png']
 
     def __init__(self):
-        self.X = random.randint(64, 737)
-        self.Y = random.randint(20, 80)
-        self.X_change = random.uniform(0.1, 0.4)
-        self.Y_change = random.randint(25, 40)
+        self.x = random.randint(64, 737)
+        self.y = random.randint(20, 80)
+        self.x_change = random.uniform(0.1, 0.4)
+        self.y_change = random.randint(30, 60)
         self.invader_image = pygame.image.load(random.choice(self.alien_images))
 
+    def play(self):
+        self.draw_on_screen()
+        self.move()
+
     def draw_on_screen(self):
-        SCREEN.blit(self.invader_image, (self.X, self.Y))
+        SCREEN.blit(self.invader_image, (self.x, self.y))
 
     def move(self):
-        self.X += self.X_change
-        if self.X >= 735 or self.X <= 0:
-            self.X_change *= -1
-            self.Y += self.Y_change
-            self.X_change += 0.05
+        self.x += self.x_change
+        if self.x >= RIGHT_SCREEN_BORDER or self.x <= LEFT_SCREEN_BORDER:
+            self.x_change *= -1
+            self.y += self.y_change
+
+    def win_by_touch(self, player_x):
+        if self.y >= 450:
+            if abs(player_x - self.x) < 10:
+                return True
 
 
 class Player:
     def __init__(self):
-        self.player_image = pygame.image.load('data/spaceship.png')
-        self.X = 370
-        self.Y = 523
-        self.X_change = 0
-        self.default_player_X_change = 0.4
+        self.player_image = pygame.image.load('data/character.png')
+        self.x = 370
+        self.y = 523
+        self.x_change = 0
+        self.default_player_x_change = 0.4
+        self.alive = True
+
+    def play(self):
+        self.draw_on_screen()
+        self.move()
 
     def draw_on_screen(self):
-        SCREEN.blit(self.player_image, (self.X - 16, self.Y + 10))
+        SCREEN.blit(self.player_image, (self.x - 16, self.y + 10))
 
     def move(self):
         left_screen_border = 16
         right_screen_border = 750
-        self.X += self.X_change
-        if self.X <= left_screen_border:
-            self.X = left_screen_border
-        elif self.X >= right_screen_border:
-            self.X = right_screen_border
+        self.x += self.x_change
+        if self.x <= left_screen_border:
+            self.x = left_screen_border
+        elif self.x >= right_screen_border:
+            self.x = right_screen_border
 
 
 class Bullet:
-    def __init__(self):
+    def __init__(self, player_x, player_y):
         self.bullet_image = pygame.image.load('data/bullet.png')
-        self.X = 0
-        self.Y = 100
-        self.X_change = 0
-        self.Y_change = 2
+        self.x = player_x
+        self.y = player_y
+        self.x_change = 0
+        self.y_change = 1.7
         self.state = "inactive"
 
-    @staticmethod
-    def is_collision(x1, x2, y1, y2):
-        distance = math.sqrt((math.pow(x1 - x2, 2)) + (math.pow(y1 - y2, 2)))
-        if distance <= 30:
-            return True
-        else:
-            return False
+    def play(self):
+        self.draw_on_screen()
+        self.move()
 
     def draw_on_screen(self):
-        SCREEN.blit(self.bullet_image, (self.X, self.Y))
+        SCREEN.blit(self.bullet_image, (self.x, self.y))
         self.state = "fire"
 
     def move(self):
-        if self.Y <= 0:
-            self.Y = 560
-            state = "inactive"
+        if self.y <= 0:
+            self.y = 560
         if self.state is "fire":
             self.draw_on_screen()
-            self.Y -= self.Y_change
+            self.y -= self.y_change
+
+    def is_out_of_bounds(self):
+        if self.y < 0 or self.y > 600:
+            return True
+        else:
+            return False
 
 
 class Score:
     def __init__(self):
         self.font = pygame.font.Font('freesansbold.ttf', 20)
         self.value = 0
-        self.X, self.Y = 5, 5
+        self.x, self.y = 5, 5
 
     def draw_on_screen(self):
         score = self.font.render("Points: " + str(self.value), True, WHITE_COLOR)
-        SCREEN.blit(score, (self.X, self.Y))
+        SCREEN.blit(score, (self.x, self.y))
 
 
-game_over_font = pygame.font.Font('freesansbold.ttf', 64)
+class Utilities:
+    game_over_font = pygame.font.Font('freesansbold.ttf', 64)
 
-def game_over():
-    game_over_text = game_over_font.render("GAME OVER", True, WHITE_COLOR)
-    SCREEN.blit(game_over_text, (190, 250))
+    @staticmethod
+    def is_collision(x1, y1, x2, y2):
+        distance = math.sqrt((math.pow(x1 - x2, 2)) + (math.pow(y1 - y2, 2)))
+        relative_proximity = 40
+        if distance <= relative_proximity:
+            return True
+        else:
+            return False
 
+    @staticmethod
+    def game_over():
+        game_over_text = Utilities.game_over_font.render("GAME OVER", True, WHITE_COLOR)
+        time.sleep(.25)
+        SCREEN.blit(game_over_text, (190, 250))
 
 
 def main():
-    player = Player()  # nie działało ruszanie statkiem bo caly czas
-    # spawnował nowy w tym samym miejscu, wiec w domyslnym położeniu
+    player = Player()
 
-    number_of_enemies = 6
-    enemies = []
-    for num in range(number_of_enemies):
-        new_enemy = Enemy()
-        enemies.append(new_enemy)
+    starting_enemies = 5
+    enemies = [Enemy() for _ in range(starting_enemies)]
 
-    bullet = Bullet()
+    bullets = []
     score = Score()
+    score_gap_for_new_enemy = 5
 
+    # game running loop
     running = True
     while running:
-
-        SCREEN.fill(BLACK_COLOR)
-
-        player.draw_on_screen()
-        player.move()
-
+        InitialSetup.show_background()
         score.draw_on_screen()
+
+        if player.alive:
+            player.play()
+        else:
+            Utilities.game_over()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    player.X_change = -player.default_player_X_change
+                    player.x_change = -player.default_player_x_change
                 if event.key == pygame.K_RIGHT:
-                    player.X_change = player.default_player_X_change
+                    player.x_change = player.default_player_x_change
                 if event.key == pygame.K_SPACE:
-                    if bullet.state is "inactive":
-                        random_X_addition = random.randint(-30, 10)
-                        bullet.X = player.X + random_X_addition
-                        bullet.draw_on_screen()
+                    if not bullets:
+                        new_bullet = Bullet(player.x, player.y)
+                        bullets.append(new_bullet)
             if event.type == pygame.KEYUP:
-                player.X_change = 0
+                player.x_change = 0
+
+        for bullet in bullets:
+            bullet.play()
+            if bullet.is_out_of_bounds():
+                bullets.remove(bullet)
 
         for enemy in enemies:
-            enemy.draw_on_screen()
-            enemy.move()
+            enemy.play()
 
-            if enemy.Y >= 450:
-                if abs(player.X - enemy.X) < 10:
-                    game_over()
-                    break
+            if enemy.win_by_touch(player.x):
+                enemies.clear()
+                player.alive = False
+                break
 
-            collision = bullet.is_collision(bullet.X, enemy.X, bullet.Y, enemy.Y)
-            if collision:
-                enemies.remove(enemy)
-                del enemy
-                score.value += 1
-                bullet.Y = 600
-                state = "inactive"
-                new_enemy = Enemy()
-                enemies.append(new_enemy)
+            for bullet in bullets:
+                is_collision = Utilities.is_collision(bullet.x, bullet.y, enemy.x, enemy.y)
+                if is_collision:
+                    enemies.remove(enemy)
+                    score.value += 1
+                    bullets.remove(bullet)
+                    new_enemy = Enemy()
+                    enemies.append(new_enemy)
+
+        new_enemies = score.value // score_gap_for_new_enemy
+        total_enemies = starting_enemies + new_enemies
+        if len(enemies) != total_enemies:
+            for _ in range(total_enemies - len(enemies)):
+                enemies.append(Enemy())
 
         pygame.display.update()
 
