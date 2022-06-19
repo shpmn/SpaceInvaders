@@ -19,6 +19,21 @@ LEFT_SCREEN_BORDER = 0
 RIGHT_SCREEN_BORDER = 735
 
 
+class MainScreenSetup:
+    starting_image = pygame.image.load("data/starting_menu.png")
+    press_to_start_font = pygame.font.Font('freesansbold.ttf', 32)
+
+    @staticmethod
+    def show_mainscreen():
+        SCREEN.blit(MainScreenSetup.starting_image, (0, 0))
+
+    @staticmethod
+    def draw_press_to_start():
+        press_to_start_text = MainScreenSetup.press_to_start_font.render("Press SPACE to start", True, WHITE_COLOR)
+        SCREEN.blit(press_to_start_text, (235, 500))
+
+
+
 class InitialSetup:
     background_image = pygame.image.load("data/background.png").convert_alpha()
 
@@ -33,10 +48,11 @@ class Enemy:
 
     base_x_accelaration = 0.1
 
+
     def __init__(self):
         self.x = random.randint(64, 737)
         self.y = random.randint(20, 80)
-        self.x_change = random.uniform(0.1, 0.4)
+        self.x_change = random.uniform(0.2, 0.5)
         self.y_change = random.randint(30, 60)
         self.invader_image = pygame.image.load(random.choice(self.alien_images))
         self.x_hitbox = (self.x, self.x + 64)
@@ -101,9 +117,10 @@ class Player:
 class Bullet:
     def __init__(self, player_x, player_y):
         self.bullet_image = pygame.image.load('data/bullet.png')
-        gun_position_adjustment = 10
-        self.x = player_x + gun_position_adjustment
-        self.y = player_y
+        gun_position_adjustment_x = 10
+        gun_position_adjustment_y = -20
+        self.x = player_x + gun_position_adjustment_x
+        self.y = player_y + gun_position_adjustment_y
         self.x_change = 0
         self.y_change = 1.7
         self.state = "inactive"
@@ -119,7 +136,7 @@ class Bullet:
     def move(self):
         if self.y <= 0:
             self.y = 560
-        if self.state is "fire":
+        if self.state == "fire":
             self.draw_on_screen()
             self.y -= self.y_change
 
@@ -160,7 +177,26 @@ class Utilities:
         SCREEN.blit(game_over_text, (190, 250))
 
 
-def main():
+def main_screen():
+    running = True
+    while running:
+        MainScreenSetup.show_mainscreen()
+        MainScreenSetup.draw_press_to_start()
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    running = False
+                    game()
+
+
+
+
+
+def game():
     player = Player()
 
     starting_enemies = 5
@@ -176,13 +212,10 @@ def main():
             for _ in range(total_enemies - len(enemies)):
                 enemies.append(Enemy())
 
-    # def adjust_enemies_velocity(_enemy):
+    # def adjust_enemies_velocity(enemy):
     #     acceleration_factor = score.value // score.gap_for_enemy_acceleration
-    #     velocity_adjustment = acceleration_factor * _enemy.base_x_accelaration
-    #     new_velocity = _enemy.x_change + velocity_adjustment
-    #     print(velocity_adjustment)
-    #     if _enemy.x_change != new_velocity:
-    #         _enemy.x_change += velocity_adjustment
+    #     velocity_adjustment = acceleration_factor * enemy.base_x_accelaration
+    #     enemy.x_change += velocity_adjustment
 
     # game running loop
     running = True
@@ -195,6 +228,11 @@ def main():
         else:
             enemies.clear()
             Utilities.game_over()
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                        main_screen()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -218,8 +256,8 @@ def main():
 
         adjust_number_of_enemies()
 
+
         for enemy in enemies:
-            # adjust_enemies_velocity(enemy)
             enemy.play()
             if enemy.win_by_touch(player.x):
                 player.alive = False
@@ -238,8 +276,10 @@ def main():
         pygame.display.update()
 
 
-if __name__ == '__main__':
-     main()
+# if __name__ == '__main__':
+#      main()
+# else:
+main_screen()
 
 
 
